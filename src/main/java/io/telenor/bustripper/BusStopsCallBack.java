@@ -13,34 +13,34 @@ import java.util.Arrays;
  */
 public class BusStopsCallBack implements InvocationCallback<Response> {
 
-    private ObjectMapper mapper = new ObjectMapper();
+	private ObjectMapper mapper = new ObjectMapper();
 
-    private TripsCallback listener;
+	private TripsCallback listener;
 
-    public BusStopsCallBack(TripsCallback callback) {
-        this.listener = callback;
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
+	public BusStopsCallBack(TripsCallback callback) {
+		this.listener = callback;
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
 
-    public void completed(Response response) {
-        ObjectMapper mapper = new ObjectMapper();
+	public void completed(Response response) {
+		ObjectMapper mapper = new ObjectMapper();
 		int stopsCount = 0;
 		int stopsCounter = 0;
-		
-        try {
-            BusStop[] stops = mapper.readValue(response.readEntity(String.class), BusStop[].class);		
-			for (int i = 0; i< stops.length && stopsCount<10;i++) {	// Get useful stops' number
+
+		try {
+			BusStop[] stops = mapper.readValue(response.readEntity(String.class), BusStop[].class);		
+
+			for (int i = 0; i< stops.length && stopsCount<10;i++) {
 				if (stops[i].getPlaceType().equals("Stop")) {
 					stopsCount++;
 				}
 			}
 			System.out.println(String.format("Got %d busstops nearby", stopsCount));
 
-            for(int j = 0; j< stops.length; j++) {
-                BusStop stop = stops[j];
+			for(int i = 0; i< stops.length; i++) {
+				BusStop stop = stops[i];
 				if (!stop.getPlaceType().equals("Stop")) {
-					continue;	// Not a bus stop, skip. 
-								// Error fix for "Failed getting trips. No content to map due to end-of-input"
+					continue;
 				}
 				stopsCounter++;
 
@@ -49,14 +49,14 @@ public class BusStopsCallBack implements InvocationCallback<Response> {
 				if (isLast) {
 					break;
 				}
-            }			
-        } catch (IOException e) {
-            listener.failedGettingTrips(e);
-        }
+			}
+		} catch (IOException e) {
+			listener.failedGettingTrips(e);
+		}
 
-    }
+	}
 
-    public void failed(Throwable throwable) {
-        listener.failedGettingTrips((IOException) throwable);
-    }
+	public void failed(Throwable throwable) {
+		listener.failedGettingTrips((IOException) throwable);
+	}
 }
