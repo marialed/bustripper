@@ -6,13 +6,49 @@ complaints that the client was slow in getting all the bus trips.
 
 Your assignment for the first hour of the day is;
 
-- Bugs have been filed on the client not supporting input of place names with non-alphanumeric characters
-  (St. Hanshaugen). Fix this.
+1. Bugs have been filed on the client not supporting input of place names with characters other than letters
+   (examples are 'St. Hanshaugen' or 'Telenor Fornebu'). Can you fix this?
+   > Input parsing to remove non-alphanumeric and non-space characters was added in InputGatherer.run().
+   The final search text is presented.
 
-- After the first search, the cursor is not positioned correctly. Can you fix this?
+2. The previous developer had intended that pressing both "q" and just <enter> at the query prompt should stop the
+   program. It turns out only one of them works. Can you fix the other?
+   > In InputGatherer.run(): Conditional statement for searchterm == "q" was updated to searchterm.equals("q"). The former condition
+   statement evaluated if searchterm was exactly the same object as "q".
 
-- Review the current code. What works, and where is there technical debt? Find 3 issues you would like to change.
+3. On some searches ('Fornebu' or 'Oslo'), more than 10 results are printed and the cursor is not positioned correctly.
+   Can you fix this?
+   > In BustripWaiter.gotTrips(), the condition for printing the final results was (done || allTrips.size() >= maxtrips).
+   Being an OR condition, the second part of the condition allowed for printing results before being 'done'.
+   Not only so, but the results printed where those that the last bus stop returned and not across all bus stops.
+   To attend both issues, 
+   a. Condition (done || allTrips.size() >= maxtrips) was changed to only (done).
+   b. Printing command trips.stream().sorted(...) was changed to allTrips.stream().sorted(...).
 
-- Still there are complaints, that in situations where network is slow, the output of the bus lines are messy.
-  What can be the explanations of these? Plan (but don't code) what needs to be changed to be more robust against
-  slow networks.
+4. Perform a code review of the current code. Make notes of What works, identify bugs and suggest improvements.
+   Prepare a discussion around your findings. There is no need to code corrections here.
+   > a. The returned list from https://reisapi.ruter.no/Place/GetPlaces/ includes both bus stops and POI places.
+        POI places don't have running services and therefore can't return results when queried for bus lines.
+        This causes a print out for the error message "Failed getting trips. No content to map due to end-of-input".
+        This can be fixed by filtering the return list of bus stops (fix in code - BusStopsCallBack.completed()) and then starting
+        search threads only for actual bus stops.
+        A different and more effective way to approach this would be to filter the results before they are stored into BusStop[]
+        stops. The format of a place from GetPlaces API returns field <PlaceType>, which has value "Stop" if the place is a bus stop.
+   
+   > b. There is a check in place, for searching for connections from the first 10 bus stops: BusStopsCallBack.completed().
+        Given that places are returned "sorted according to geographical proximity" according to the API, limiting the number of bus
+        stops is not a bad idea, to control how much the process expands. If however, this were to change to include all surrounding bus
+        stops, it needs to be debugged, because if more than 10 bus stops are searched for connections, weird results are returned.
+        e.g. if we allow 12 stops, a search for St. Hanshaugen returns 1 connection in an hour ahead of search time.
+
+5. Still there are complaints, that in situations where network is slow, the output of the bus lines are messy.
+   What can be the explanations of these? Plan (but don't code) what needs to be changed to be more robust against
+   slow networks.
+   > A control over the concurrent threads, to know which ones are still running. Currently the final results are trigerred when
+   gotTrips() is called for the last bus stop. A more appropriate solution would check that all threads have completed, so that all bus
+   stops have been searched and the final result is presented complete.
+   Approach: http://stackoverflow.com/questions/702415/how-to-know-if-other-threads-have-finished
+
+   > Last suggestion under 4a also holds potential, to make sure that only useful information is queried, or if that's not possible
+   given the API, to ensure that returned information is filtered and only useful information is stored and evaluated.
+   
