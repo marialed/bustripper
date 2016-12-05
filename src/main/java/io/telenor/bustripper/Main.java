@@ -18,13 +18,13 @@ public class Main {
             @Override
             public synchronized void gotTrips(Set<BusTrip> trips, boolean done) {
                 allTrips.addAll(trips);
-
-                if(done || allTrips.size() >= maxtrips) {
+				
+                if(done) {
                     if (allTrips.isEmpty()) {
                         System.out.println("No trips found!");
                     }
 
-                    trips.stream().sorted(
+                    allTrips.stream().sorted(
                             (e1, e2) -> e1.getExpectedArrivalTime().compareTo(e2.getExpectedArrivalTime())
                     ).limit(maxtrips).forEach(t -> System.out.println(t));
 
@@ -57,8 +57,8 @@ public class Main {
                 do {
                     System.out.print("> ");
                     try {
-                        String searchterm = in.readLine();
-                        if("q" == searchterm || searchterm.length() == 0) {
+                        String searchterm = in.readLine().replaceAll("[^a-z A-Z]", "");
+                        if(searchterm.equals("q") || searchterm.length() == 0) {
                             System.exit(0);
                         }
                         System.out.println("Looking up " + searchterm);
@@ -67,13 +67,15 @@ public class Main {
                         waiter.waitForCompletion();
                     }
                     catch(IOException io) {
+						System.err.println("IOException caught. Exiting...");
                         done = true;
                     }
                     catch(InterruptedException uh) {
+						System.err.println("InterruptedException caught. Exiting...");
                         done = true;
                     }
+					
                 } while (!done);
-
             }
         }
 

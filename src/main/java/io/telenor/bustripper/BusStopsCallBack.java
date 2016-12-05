@@ -24,15 +24,32 @@ public class BusStopsCallBack implements InvocationCallback<Response> {
 
     public void completed(Response response) {
         ObjectMapper mapper = new ObjectMapper();
+		int stopsCount = 0;
+		int stopsCounter = 0;
+		
         try {
-            BusStop[] stops = mapper.readValue(response.readEntity(String.class), BusStop[].class);
-            System.out.println(String.format("Got %d busstops nearby", stops.length));
+            BusStop[] stops = mapper.readValue(response.readEntity(String.class), BusStop[].class);		
+			for (int i = 0; i< stops.length && stopsCount<10;i++) {	// Get useful stops' number
+				if (stops[i].getPlaceType().equals("Stop")) {
+					stopsCount++;
+				}
+			}
+			System.out.println(String.format("Got %d busstops nearby", stopsCount));
 
-            for(int i = 0; i< stops.length && i<10;i++) {
-                BusStop stop = stops[i];
-                boolean isLast = stop == stops[stops.length -1];
-                new Thread(new FindBusLinesForStop(stop.getId(), listener, isLast)).start();
-            }
+            for(int j = 0; j< stops.length; j++) {
+                BusStop stop = stops[j];
+				if (!stop.getPlaceType().equals("Stop")) {
+					continue;	// Not a bus stop, skip. 
+								// Error fix for "Failed getting trips. No content to map due to end-of-input"
+				}
+				stopsCounter++;
+
+				boolean isLast = stopsCounter == stopsCount;
+				new Thread(new FindBusLinesForStop(stop.getId(), listener, isLast)).start();
+				if (isLast) {
+					break;
+				}
+            }			
         } catch (IOException e) {
             listener.failedGettingTrips(e);
         }
